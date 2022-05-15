@@ -8,10 +8,19 @@
  *       如uiPopulationN表示这个变量为unsigned int类型
  */
 
- #include <stdlib.h>
- #include <stdio.h>
- #include <time.h>
- #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <time.h>
+#include <string.h>
+#include "delib.h"
+
+
+static DE_INIT_ARG g_stDeArg;
+static double ** g_matrixPopulation = NULL;
+static double ** g_matrixPopulationMutation = NULL;
+static double ** g_matrixPopulationCrossOver = NULL;
+static double * g_dFitnessVal = NULL;
+static double * g_doubleBestResult = NULL;
 
 /*生成的随机整数n: min <= n <= max*/
 static int myrand_int(int min, int max)
@@ -105,7 +114,8 @@ double ** mutation(double ** matrixPopulation,
         return NULL;
     }
 
-    double ** matrixPopulationTmp = malloc_matrix(uiPopulationN, uiIndividualSize);
+    //double ** matrixPopulationTmp = malloc_matrix(uiPopulationN, uiIndividualSize);
+    double ** matrixPopulationTmp = g_matrixPopulationMutation;
     if (NULL == matrixPopulationTmp)
     {
         printf("matrixPopulationTmp is NULL\n");
@@ -153,7 +163,8 @@ double ** crossover(double ** matrixPopulation, double ** matrixPopulationTmp,
         return NULL;
     }
 
-    double ** matrixPopulationCrossOver = malloc_matrix(uiPopulationN, uiIndividualSize);
+    //double ** matrixPopulationCrossOver = malloc_matrix(uiPopulationN, uiIndividualSize);
+    double ** matrixPopulationCrossOver = g_matrixPopulationCrossOver;
     if (NULL == matrixPopulationCrossOver)
     {
         printf("matrixPopulationCrossOver is NULL\n");
@@ -199,10 +210,7 @@ void selection(double ** matrixPopulation, double ** matrixPopulationCrossOver,
 
     for (int i = 0; i < uiPopulationN; ++i)
     {
-        fitnessval_crossover[i] = calFitness(matrixPopulationCrossOver[i], uiIndividualSize);
-        printf("fitnessval_crossover[%d]=%f, fitnessval[%d]=%f\n",
-                        i, fitnessval_crossover[i],
-                        i, fitnessval[i]);
+        fitnessval_crossover[i] = g_stDeArg.fitnessFunc(matrixPopulationCrossOver[i], uiIndividualSize);
         if (fitnessval_crossover[i] < fitnessval[i])
         {
             for (int j = 0; j < uiIndividualSize; ++j)
@@ -238,13 +246,13 @@ void saveBest(double * fitnessVal, unsigned int uiPopulationN)
 }
 
 
-int main(void)
+int main1(void)
 {
     int xMin = -10;
     int xMax = 10;
     /*初始化种群, 1000个个体,解空间为10维*/
-    unsigned int NP = 10;
-    unsigned int ND = 2; /*number of dimensions*/
+    unsigned int NP = 50;
+    unsigned int ND = 10; /*number of dimensions*/
     double ** matrixPopulation = malloc_matrix(NP, ND);
     for (int i = 0; i < NP; ++i)
     {
@@ -254,15 +262,7 @@ int main(void)
         }
     }
 
-    for (int i = 0; i < NP; ++i)
-    {
-        printf("indival%d: ", i);
-        for (int j = 0; j < ND; ++j)
-        {
-            printf("%f ", matrixPopulation[i][j]);
-        }
-        printf("\n");
-    }
+    
 
     /*计算适应值*/
     double * fitnessVal = malloc(sizeof(double)*NP);
@@ -271,12 +271,7 @@ int main(void)
         fitnessVal[i] = calFitness(matrixPopulation[i], ND);
     }
 
-    printf("fitness val:");
-    for (int i = 0; i < NP; ++i)
-    {
-        printf("%f ", fitnessVal[i]);
-    }
-    printf("\n");
+    
 
     /*开始演化计算*/
     int gen = 0; 
@@ -286,56 +281,121 @@ int main(void)
     while (gen <= 1000) /*计算1000代*/
     {
         printf("generation %d\t: ", gen); fflush(stdout);
-         printf("\nmatrixPopulation:\n");
-        for (int i = 0; i < NP; ++i)
-    {
-        printf("indival%d: ", i);
-        for (int j = 0; j < ND; ++j)
-        {
-            printf("%f ", matrixPopulation[i][j]);
-        }
-        printf("\n");
-    }
+         
         double ** matrixPopulationMutation = mutation(matrixPopulation, NP, ND, F);
-        printf("\nmatrixPopulationMutation:\n");
-        for (int i = 0; i < NP; ++i)
-    {
-        printf("indival%d: ", i);
-        for (int j = 0; j < ND; ++j)
-        {
-            printf("%f ", matrixPopulationMutation[i][j]);
-        }
-        printf("\n");
-    }
+        
         double ** matrixPopulationCrossOver = crossover(matrixPopulation, matrixPopulationMutation,
                                                     NP, ND,CR);
-        printf("\nmatrixPopulationCrossOver:\n");
-        for (int i = 0; i < NP; ++i)
-    {
-        printf("indival%d: ", i);
-        for (int j = 0; j < ND; ++j)
-        {
-            printf("%f ", matrixPopulationCrossOver[i][j]);
-        }
-        printf("\n");
-    }
-        printf("fitness val1:");
-    for (int i = 0; i < NP; ++i)
-    {
-        printf("%f ", fitnessVal[i]);
-    }
-    printf("\n");
+        
+        
         selection(matrixPopulation, matrixPopulationCrossOver, NP, ND, fitnessVal);
-        printf("fitness val2:");
-    for (int i = 0; i < NP; ++i)
-    {
-        printf("%f ", fitnessVal[i]);
-    }
-    printf("\n");
         free_matrix(matrixPopulationMutation, NP);
         free_matrix(matrixPopulationCrossOver, NP);
         saveBest(fitnessVal, NP);
         ++gen;
     }
+}
+
+/*繁衍一次*/
+int delib_gen_one_step(double * result)
+{
+    if (NULL == result)
+    {
+        return -1;
+    }
+    
+    /*变异*/
+    double ** matrixPopulationMutation = mutation(g_matrixPopulation, g_stDeArg.NP, g_stDeArg.ND, g_stDeArg.F);
+
+    /*交叉*/
+    double ** matrixPopulationCrossOver = crossover(g_matrixPopulation, matrixPopulationMutation,
+                                         g_stDeArg.NP, g_stDeArg.ND, g_stDeArg.CR);
+
+    /*根据适应性选择*/
+    selection(g_matrixPopulation, matrixPopulationCrossOver, 
+                    g_stDeArg.NP, g_stDeArg.ND, g_dFitnessVal);
+    
+    /*根据最小值,返回解*/
+    int tmp = 0;
+
+    for (int i = 1; i < g_stDeArg.NP; ++i)
+    {
+        if (g_dFitnessVal[i] < g_dFitnessVal[tmp])
+        {
+            tmp = i;
+        }
+    }
+
+    for (int i = 0; i < g_stDeArg.ND; ++i)
+    {
+        result[i] = g_matrixPopulation[tmp][i];
+    }
+    
+    return 0;
+}
+
+
+int delib_init(DE_INIT_ARG * arg)
+{
+    if (NULL == arg || NULL == arg->fitnessFunc)
+    {
+        return -1;
+    }
+    
+    memcpy(&g_stDeArg, arg, sizeof(g_stDeArg));
+
+    g_doubleBestResult = malloc(sizeof(double)*g_stDeArg.ND);
+    if (NULL == g_doubleBestResult)
+    {
+        return -1;
+    }
+
+    g_matrixPopulation = malloc_matrix(g_stDeArg.NP, g_stDeArg.ND);
+    g_matrixPopulationMutation = malloc_matrix(g_stDeArg.NP, g_stDeArg.ND);
+    g_matrixPopulationCrossOver = malloc_matrix(g_stDeArg.NP, g_stDeArg.ND);
+
+    if ((NULL == g_matrixPopulation)||
+        (NULL == g_matrixPopulationMutation)||
+        (NULL == g_matrixPopulationCrossOver))
+    {
+        if (NULL != g_matrixPopulation)
+        {
+            free_matrix(g_matrixPopulation, g_stDeArg.NP);
+        }
+        if (NULL != g_matrixPopulationMutation)
+        {
+            free_matrix(g_matrixPopulationMutation, g_stDeArg.NP);
+        }
+        if (NULL != g_matrixPopulationCrossOver)
+        {
+            free_matrix(g_matrixPopulationCrossOver, g_stDeArg.NP);
+        }
+        free(g_doubleBestResult);
+        return -1;
+    }
+
+    /*初始化矩阵*/
+    int xMin = -10; int xMax = 10;
+    for (int i = 0; i < g_stDeArg.NP; ++i)
+    {
+        for (int j = 0; j < g_stDeArg.ND; ++j)
+        {
+            g_matrixPopulation[i][j] = xMin + myrand_double() * (xMax - xMin);
+        }
+    }
+
+    /*计算适应值*/
+    g_dFitnessVal = malloc(sizeof(double)*g_stDeArg.NP);
+    for (int i = 0; i < g_stDeArg.NP; ++i)
+    {
+        g_dFitnessVal[i] = g_stDeArg.fitnessFunc(g_matrixPopulation[i], g_stDeArg.ND);
+    }
+
+    return 0;
+}
+
+int delib_deinit(void)
+{
+    return 0;
 }
 
