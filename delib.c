@@ -84,18 +84,6 @@ static void free_matrix(double ** mat, unsigned int uiRows)
 }
 
 
-double calFitness(const double * args, unsigned int argc)
-{
-    double fitness = 0;
-    for (int i = 0; i < argc; ++i)
-    {
-        fitness += (args[i]+1) * (args[i]+1);
-    }
-
-    return fitness+2;
-}
-
-
 /*
  * 执行变异的函数
  * [入参]matrixPopulation: 表示种群的矩阵
@@ -105,7 +93,7 @@ double calFitness(const double * args, unsigned int argc)
  * [返回值]: 返回 根据种群变异的临时种群
  * Note: 返回值为malloc申请获得,注意要释放内存.
 */
-double ** mutation(double ** matrixPopulation, 
+static double ** mutation(double ** matrixPopulation, 
         unsigned int uiPopulationN, unsigned int uiIndividualSize, double dF)
 {
     if (NULL == matrixPopulation)
@@ -154,7 +142,7 @@ double ** mutation(double ** matrixPopulation,
  * [返回值]: 返回 种群和mutation产生的临时种群 交叉后的种群
  * Note: 返回值为malloc申请获得,注意要释放内存.
 */
-double ** crossover(double ** matrixPopulation, double ** matrixPopulationTmp,
+static double ** crossover(double ** matrixPopulation, double ** matrixPopulationTmp,
         unsigned int uiPopulationN, unsigned int uiIndividualSize, double dCR)
 {
     if (NULL == matrixPopulation || NULL == matrixPopulationTmp)
@@ -198,7 +186,7 @@ double ** crossover(double ** matrixPopulation, double ** matrixPopulationTmp,
  * [入  参]  uiIndividualSize: 每个个体的大小(即解空间的维数)
  * [入出参]fitnessval,适应值向量(此函数会更新此向量)
 */
-void selection(double ** matrixPopulation, double ** matrixPopulationCrossOver,
+static void selection(double ** matrixPopulation, double ** matrixPopulationCrossOver,
         unsigned int uiPopulationN, unsigned int uiIndividualSize,double *fitnessval)
 {
     if (NULL == matrixPopulation || NULL == matrixPopulationCrossOver || NULL == fitnessval)
@@ -221,79 +209,6 @@ void selection(double ** matrixPopulation, double ** matrixPopulationCrossOver,
         }
     }
     free(fitnessval_crossover);
-}
-
-
-void saveBest(double * fitnessVal, unsigned int uiPopulationN)
-{
-    if (NULL == fitnessVal)
-    {
-        printf("(NULL == fitnessVal)");
-        return ;
-    }
-    
-    int tmp = 0;
-
-    for (int i = 1; i < uiPopulationN; ++i)
-    {
-        if (fitnessVal[i] < fitnessVal[tmp])
-        {
-            tmp = i;
-        }
-    }
-
-    printf("best val: %f\n", fitnessVal[tmp]);
-}
-
-
-int main1(void)
-{
-    int xMin = -10;
-    int xMax = 10;
-    /*初始化种群, 1000个个体,解空间为10维*/
-    unsigned int NP = 50;
-    unsigned int ND = 10; /*number of dimensions*/
-    double ** matrixPopulation = malloc_matrix(NP, ND);
-    for (int i = 0; i < NP; ++i)
-    {
-        for (int j = 0; j < ND; ++j)
-        {
-            matrixPopulation[i][j] = xMin + myrand_double() * (xMax - xMin);
-        }
-    }
-
-    
-
-    /*计算适应值*/
-    double * fitnessVal = malloc(sizeof(double)*NP);
-    for (int i = 0; i < NP; ++i)
-    {
-        fitnessVal[i] = calFitness(matrixPopulation[i], ND);
-    }
-
-    
-
-    /*开始演化计算*/
-    int gen = 0; 
-    double F = 0.5;
-    double CR = 0.9;
-    
-    while (gen <= 1000) /*计算1000代*/
-    {
-        printf("generation %d\t: ", gen); fflush(stdout);
-         
-        double ** matrixPopulationMutation = mutation(matrixPopulation, NP, ND, F);
-        
-        double ** matrixPopulationCrossOver = crossover(matrixPopulation, matrixPopulationMutation,
-                                                    NP, ND,CR);
-        
-        
-        selection(matrixPopulation, matrixPopulationCrossOver, NP, ND, fitnessVal);
-        free_matrix(matrixPopulationMutation, NP);
-        free_matrix(matrixPopulationCrossOver, NP);
-        saveBest(fitnessVal, NP);
-        ++gen;
-    }
 }
 
 /*繁衍一次*/
@@ -396,6 +311,19 @@ int delib_init(DE_INIT_ARG * arg)
 
 int delib_deinit(void)
 {
+    free(g_doubleBestResult);
+    g_doubleBestResult = NULL;
+
+    free(g_dFitnessVal);
+    g_dFitnessVal = NULL;
+
+    free_matrix(g_matrixPopulation,  g_stDeArg.ND);
+    free_matrix(g_matrixPopulationMutation,  g_stDeArg.ND);
+    free_matrix(g_matrixPopulationCrossOver,  g_stDeArg.ND);
+    g_matrixPopulation = NULL;
+    g_matrixPopulationMutation = NULL;
+    g_matrixPopulationCrossOver = NULL;
+    
     return 0;
 }
 
