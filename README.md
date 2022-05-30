@@ -373,6 +373,5 @@ Rastrigin | f(x) = ($x_1^2$ - 10cos(2$pi$$x_1$)+10) + <br> ... + ($x_D^2$ - 10co
 
 
 # 5. 参考
-<https://github.com/zhangzhiyong1989/Differential-Evolution/blob/master/DE.py>
-
+<https://github.com/zhaozhiyong1989/Differential-Evolution/blob/master/DE.py>
 
