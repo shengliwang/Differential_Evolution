@@ -1,3 +1,5 @@
+DE算法代码托管到：<https://git.ustc.edu.cn/vicking/differential-evolution>  
+
 [TOC]
 # 1. 差分进化算法(DE)的原理简介
 **差分进化**算法(**Differential Evolution**)是**遗传算法**的一种。  
@@ -352,6 +354,12 @@ Rastrigin | f(x) = ($x_1^2$ - 10cos(2$pi$$x_1$)+10) + <br> ... + ($x_D^2$ - 10co
 <center>
 **下图初始种群增加到3000，结论：算法收敛快（100代时收敛），但是多个实验并依然不收敛于同一个值**
 ![Rastrigin_40_10NP=3000.png](datasheet/Rastrigin_40_10_NP=3000.png)</center>
+
+<center>
+**下图初始种群增加到3000，代数增加到2000，结论：算法收敛快（100代时收敛），但是多个实验并依然不收敛于同一个值**
+![Rastrigin_40_10_NP=3000_step=2000.png](datasheet/Rastrigin_40_10_NP=3000_step=2000.png)</center>
+
+
 
 备注（测试DE算法的时候直接把目标函数作为适应性函数进行测试的）
 
