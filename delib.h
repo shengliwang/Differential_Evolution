@@ -13,12 +13,11 @@ typedef struct DE_args
     unsigned int ND; /* nubmer of Dimensions, 个体的大小,即解空间维数*/
 }DE_INIT_ARG;
 
-int delib_gen_one_step(double * result);
+
+
 int delib_init(DE_INIT_ARG * arg);
 int delib_deinit(void);
 
-
-
-
+int delib_gen_one_step(double * result);
 
 #endif
